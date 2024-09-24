@@ -15,10 +15,8 @@ const findTeacherByUsername = async (username) => {
 // Tìm hoặc tạo lớp học dựa trên className và teacherId
 const findOrCreateClass = async (className, teacherId) => {
   try {
-    // Kiểm tra xem lớp đã tồn tại hay chưa
     let classData = await Class.findOne({ className }).lean().exec();
 
-    // Nếu chưa có lớp học, tiến hành tạo mới
     if (!classData) {
       classData = new Class({
         className,
