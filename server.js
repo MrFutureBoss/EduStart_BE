@@ -44,6 +44,8 @@ const server = http.createServer(app);
 // app.use("/admins", adminRouter);
 app.use("/profession", routes.professionRouters);
 app.use("/specialty", routes.specialtyRouters);
+app.use("/user", routes.userRouters);
+
 
 app.use(async (req, res, next) => {
   next(createError.NotFound());
