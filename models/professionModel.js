@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+import mongoose, { Schema } from "mongoose";
 const professionSchema = new Schema(
   {
     name: {
@@ -13,7 +13,7 @@ const professionSchema = new Schema(
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Specialty",
-        require: true,
+        require: false,
       },
     ],
   },
@@ -23,4 +23,4 @@ const professionSchema = new Schema(
 );
 
 const Profession = mongoose.model("Profession", professionSchema);
-export default Special;
+export default Profession;
