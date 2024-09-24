@@ -6,7 +6,6 @@ import createError from "http-errors";
 import path from "path";
 import connectDB from "./database.js";
 import http from "http";
-import adminRouter from "./routes/index.js";
 import routes from "./routes/index.js";
 const app = express();
 dotnv.config();
@@ -39,16 +38,13 @@ const server = http.createServer(app);
 //   },
 // });
 
-
-
-// app.use("/admins", adminRouter);
+app.use("/admins", routes.adminRouter);
 app.use("/profession", routes.professionRouters);
 app.use("/specialty", routes.specialtyRouters);
 
 app.use(async (req, res, next) => {
   next(createError.NotFound());
 });
-
 
 app.use((err, req, res, next) => {
   res.status(err.status || 500);

@@ -1,5 +1,5 @@
 import express from "express";
-import adminController from "../../controllers/AdminController/index.js";
+import adminController from "../controllers/AdminController/index.js";
 import multer from "multer";
 
 const adminRouter = express.Router();

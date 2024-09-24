@@ -1,9 +1,10 @@
 import professionRouters from "./professionRoutes.js";
 import specialtyRouters from "./specialtyRoutes.js";
-
+import adminRouter from "./adminRouter.js";
 const routes = {
-     professionRouters,
-     specialtyRouters
-}
+  professionRouters,
+  specialtyRouters,
+  adminRouter,
+};
 
-export default routes
+export default routes;
