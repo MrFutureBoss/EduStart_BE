@@ -1,6 +1,7 @@
 import adminsDAO from "../../repositories/adminDAO/index.js";
 import bcrypt from "bcrypt";
 import xlsx from "xlsx";
+import classDAO from "../../repositories/classDAO/index.js";
 
 const validateEmail = (email) => {
   const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -59,10 +60,18 @@ const insertListUsers = async (req, res, next) => {
 
     const classCache = {};
     const teacherCache = {};
+    const duplicateEmails = [];
+    const fullClassUsers = [];
 
     for (const row of data) {
       const user = normalizeUserData(row);
-
+      // biến này để kiểm tra là tồn tại email này trong hệ thống chưa
+      const existingUser = await adminsDAO.findUserByEmail(user.email);
+      if (existingUser) {
+        duplicateEmails.push(user.email);
+        continue;
+      }
+      // biến này để kiểm tra giáo viên có tồn tại hay không
       if (!teacherCache[user.teacherUsername]) {
         const teacher = await adminsDAO.findTeacherByUsername(
           user.teacherUsername
@@ -74,13 +83,37 @@ const insertListUsers = async (req, res, next) => {
         }
         teacherCache[user.teacherUsername] = teacher._id;
       }
-
+      // biến này để kiểm tra có lớp trong hệ thống hay chưa
       if (!classCache[user.className]) {
-        let classData = await adminsDAO.findOrCreateClass(
+        let { classData, studentCount } = await adminsDAO.findOrCreateClass(
           user.className,
           teacherCache[user.teacherUsername]
         );
         classCache[user.className] = classData._id;
+
+        if (studentCount === 0) {
+        } else {
+          const studentCountInClass = await classDAO.getStudentCountByClassId(
+            classData._id
+          );
+
+          if (studentCountInClass >= classData.limitStudent) {
+            fullClassUsers.push(user);
+            continue;
+          }
+        }
+      } else {
+        const studentCountInClass = await classDAO.getStudentCountByClassId(
+          classCache[user.className]
+        );
+        const classData = await classDAO.getClassById(
+          classCache[user.className]
+        );
+
+        if (studentCountInClass >= classData.limitStudent) {
+          fullClassUsers.push(user);
+          continue;
+        }
       }
 
       const userData = {
@@ -93,7 +126,11 @@ const insertListUsers = async (req, res, next) => {
       await adminsDAO.createListUsers([userData]);
     }
 
-    res.send("All users processed successfully.");
+    res.status(200).json({
+      message: "All users processed successfully.",
+      duplicateEmails,
+      fullClassUsers,
+    });
   } catch (error) {
     console.error(`Error encountered: ${error.message}`);
     next(error);
