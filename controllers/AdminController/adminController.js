@@ -1,4 +1,4 @@
-import adminsDAO from "../../repositories/adminRepositories/index.js";
+import adminsDAO from "../../repositories/adminDAO/index.js";
 import bcrypt from "bcrypt";
 import xlsx from "xlsx";
 
@@ -38,10 +38,15 @@ const normalizeUserData = (row) => {
 
 const insertListUsers = async (req, res, next) => {
   try {
+    const { semesterId } = req.body;
+    if (!semesterId) {
+      return res.status(400).send("Semester ID không tồn tại.");
+    }
+
     const saltRounds = 12;
     const file = req.file;
     if (!file) {
-      return res.status(400).send("File không tồn tại");
+      return res.status(400).send("File không tồn tại.");
     }
 
     const password = "Aa@123";
@@ -82,6 +87,7 @@ const insertListUsers = async (req, res, next) => {
         ...user,
         password: hashedPassword,
         classId: classCache[user.className],
+        semesterId: semesterId,
       };
 
       await adminsDAO.createListUsers([userData]);
