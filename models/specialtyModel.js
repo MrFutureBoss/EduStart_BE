@@ -9,6 +9,11 @@ const SpecialtySchema = new Schema(
       unique: true,
       require: true,
     },
+    status: {
+      type: Boolean,
+      default: false,
+      require: true,
+    },
   },
   {
     timestamps: true,
