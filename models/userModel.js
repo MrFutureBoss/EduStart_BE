@@ -1,6 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import Classes from "./classModel.js";
 import Group from "./groupModel.js";
+import Semester from "./semesterModel.js";
 
 const userSchema = new Schema(
   {
@@ -33,6 +34,10 @@ const userSchema = new Schema(
     groupId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: Group,
+    },
+    semesterId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: Semester,
     },
     menteeCount: { type: Number },
     isLeader: { type: Boolean, default: false },
