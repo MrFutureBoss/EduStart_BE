@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 import dotenv from "dotenv";
-// import { storeOTP } from "./otpStore.js";
+import { storeOTP } from "./otpStore.js";
 
 dotenv.config();
 
@@ -28,12 +28,12 @@ export function sendEmail({ recipient_email, OTP }) {
 <div style="font-family: Helvetica, Arial, sans-serif; min-width: 1000px; overflow: auto; line-height: 2;">
   <div style="margin: 50px auto; width: 70%; padding: 20px 0;">
     <div style="border-bottom: 1px solid #eee;">
-      <a href="" style="font-size: 1.4em; color: #00466a; text-decoration: none; font-weight: 600;">Mentor connection</a>
+      <a href="" style="font-size: 1.4em; color: #00466a; text-decoration: none; font-weight: 600;">EduStart system</a>
     </div>
     <p style="font-size: 1.1em;">Hi,</p>
-    <p>Thank you for choosing Mentor connection. Use the following OTP to complete your Password Recovery Procedure. OTP is valid for 5 minutes:</p>
+    <p>Thank you for choosing EduStart system. Use the following OTP to complete your Password Recovery Procedure. OTP is valid for 5 minutes:</p>
     <h2 style="background: #00466a; margin: 0 auto; width: max-content; padding: 0 10px; color: #fff; border-radius: 4px;">${OTP}</h2>
-    <p style="font-size: 0.9em;">Regards,<br />Mentor connection</p>
+    <p style="font-size: 0.9em;">Regards,<br />EduStart system</p>
     <hr style="border: none; border-top: 1px solid #eee;" />
     <div style="float: right; padding: 8px 0; color: #aaa; font-size: 0.8em; line-height: 1; font-weight: 300;">
       <p>FPTU</p>
@@ -44,7 +44,7 @@ export function sendEmail({ recipient_email, OTP }) {
 </body>
 </html>`,
     };
-    // storeOTP(recipient_email, OTP);
+    storeOTP(recipient_email, OTP);
 
     transporter.sendMail(mail_configs, (error, info) => {
       if (error) {

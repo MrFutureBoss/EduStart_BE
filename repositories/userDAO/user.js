@@ -94,9 +94,19 @@ const findUserById = async (id) => {
     throw new Error(error.message);
   }
 };
+const updateUserPassword = async (userId, newPassword) => {
+  try {
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+    await User.findByIdAndUpdate(userId, { password: hashedPassword });
+  } catch (error) {
+    throw new Error(error.message);
+  }
+};
 export default {
   loginUser,
   findUserByEmail,
   findUser,
   findUserById,
+  updateUserPassword,
 };
