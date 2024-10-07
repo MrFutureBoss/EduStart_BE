@@ -5,6 +5,7 @@ const professionRouters = express.Router();
 
 professionRouters.get("/", professionController.getAllProfessions);
 professionRouters.post("/", professionController.createNewProfession);
-professionRouters.patch("/:id", professionController.updateProfession);
+professionRouters.put("/:id", professionController.updateProfession);
 professionRouters.delete("/:id", professionController.deleteProfession);
+professionRouters.patch("/:id", professionController.patchProfession);
 export default professionRouters;
