@@ -1,5 +1,7 @@
 import mongoose from "mongoose";
 import Profession from "../../models/professionModel.js";
+import Specialty from "../../models/SpecialtyModel.js";
+
 const getAllProfessions = async (status, skip, limit, search) => {
   try {
     let query = {};
@@ -23,9 +25,22 @@ const getAllProfessionsById = async () => {
   }
 };
 
-const createNewProfession = async (name) => {
+const createNewProfession = async (name, specialties, status) => {
   try {
-    return await Profession.create({ name });
+    const specialtyDocs = await Promise.all(
+      specialties.map(async (specialty) => {
+        const createdSpecialty = await Specialty.create(specialty);
+        return createdSpecialty._id; 
+      })
+    );
+
+    const newProfession = await Profession.create({
+      name,
+      status,
+      specialty: specialtyDocs,
+    });
+
+    return newProfession;
   } catch (error) {
     throw new Error(error);
   }

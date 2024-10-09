@@ -1,12 +1,9 @@
 import express, { json } from "express";
 import dotnv from "dotenv";
 import cors from "cors";
-import multer from "multer";
 import createError from "http-errors";
-import path from "path";
 import connectDB from "./database.js";
 import http from "http";
-import adminRouter from "./routes/index.js";
 import routes from "./routes/index.js";
 const app = express();
 dotnv.config();
