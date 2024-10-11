@@ -18,12 +18,23 @@ const getAllProfessions = async (status, skip, limit, search) => {
     throw new Error(error);
   }
 };
-const getAllProfessionsById = async () => {
+
+const getProfessionById = async (id) => {
   try {
+    const profession = await Profession.findById(id)
+      .populate('specialty') // Populating the specialties
+      .exec();
+    
+    if (!profession) {
+      throw new Error('Profession not found');
+    }
+
+    return profession;
   } catch (error) {
     throw new Error(error);
   }
 };
+
 
 const createNewProfession = async (name, specialties, status) => {
   try {
@@ -54,18 +65,32 @@ const updateProfession = async (id, values) => {
   }
 };
 
-const deleteProfession = async (id) => {
+const deleteProfessionAndSpecialties = async (professionId) => {
   try {
-    return await Profession.findByIdAndDelete(id);
+    // Find the profession by ID
+    const profession = await Profession.findById(professionId).populate('specialty');
+
+    if (!profession) {
+      throw new Error('Profession not found');
+    }
+
+    const specialtyIds = profession.specialty.map(s => s._id);
+    await Specialty.deleteMany({ _id: { $in: specialtyIds } });
+    await Profession.findByIdAndDelete(professionId);
+    return { message: 'Profession and related specialties deleted successfully' };
   } catch (error) {
-    throw new Error(error);
+    throw new Error(`Error deleting profession: ${error.message}`);
   }
 };
 
+
+
+
+
 export default {
   getAllProfessions,
-  getAllProfessionsById,
+  getProfessionById,
   createNewProfession,
   updateProfession,
-  deleteProfession,
+  deleteProfessionAndSpecialties,
 };

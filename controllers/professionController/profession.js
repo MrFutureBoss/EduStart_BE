@@ -12,7 +12,12 @@ const getAllProfessions = async (req, res, next) => {
     const skip = (pageInt - 1) * limitInt;
 
     // Call the DAO with the calculated `skip`, `limit`, and other filters
-    const professions = await professionDAO.getAllProfessions(status, skip, limitInt, search);
+    const professions = await professionDAO.getAllProfessions(
+      status,
+      skip,
+      limitInt,
+      search
+    );
 
     // Respond with paginated results
     res.status(200).json(professions); // Return the data and total count
@@ -21,16 +26,34 @@ const getAllProfessions = async (req, res, next) => {
   }
 };
 
-const createNewProfession = async (req, res, next) => {
+const getProfessionById = async (req, res, next) => {
   try {
-    const { name, specialties, status } = req.body;   
-    const newProfession = await professionDAO.createNewProfession(name, specialties, status);
-    res.status(201).send(newProfession);
+    const { id } = req.params;
+    const profession = await professionDAO.getProfessionById(id);
+
+    if (!profession) {
+      return res.status(404).json({ message: "Profession not found" });
+    }
+
+    res.status(200).json(profession);
   } catch (error) {
     next(error);
   }
 };
 
+const createNewProfession = async (req, res, next) => {
+  try {
+    const { name, specialties, status } = req.body;
+    const newProfession = await professionDAO.createNewProfession(
+      name,
+      specialties,
+      status
+    );
+    res.status(201).send(newProfession);
+  } catch (error) {
+    next(error);
+  }
+};
 
 const updateProfession = async (req, res, next) => {
   try {
@@ -41,17 +64,23 @@ const updateProfession = async (req, res, next) => {
     next(error);
   }
 };
-const deleteProfession = async (req, res, next) => {
+
+const deleteProfessionAndSpecialties = async (req, res, next) => {
   try {
     const { id } = req.params;
-    res.send(await professionDAO.deleteProfession(id));
+    const result = await professionDAO.deleteProfessionAndSpecialties(id);
+
+    res.status(200).json(result);
   } catch (error) {
     next(error);
   }
 };
+
+
 export default {
   getAllProfessions,
+  getProfessionById,
   createNewProfession,
   updateProfession,
-  deleteProfession,
+  deleteProfessionAndSpecialties,
 };
