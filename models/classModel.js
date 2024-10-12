@@ -7,6 +7,12 @@ const classSchema = new mongoose.Schema(
     teacherId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      required: true,
+    },
+    semesterId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Semester",
+      required: true,
     },
     status: {
       type: String,

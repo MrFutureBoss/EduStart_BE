@@ -33,13 +33,11 @@ const userSchema = new Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: Group,
     },
-    semesterId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: Semester,
-    },
+    semesterId: [{ type: mongoose.Schema.Types.ObjectId, ref: "Semester" }],
+
     status: {
       type: String,
-      enum: ["Active", "InActive", "Disabled"],
+      enum: ["Active", "InActive", "Disabled", "Pending"],
       default: "InActive",
     },
     rollNumber: { type: String },

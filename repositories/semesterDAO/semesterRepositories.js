@@ -9,7 +9,43 @@ const createSemester = async (semesterData) => {
 };
 
 const getAllSemesters = async () => {
-  return await Semester.find({});
+  try {
+    const semesters = await Semester.find();
+
+    const semestersWithCounts = await Promise.all(
+      semesters.map(async (semester) => {
+        const studentCount = await User.countDocuments({
+          semesterId: semester._id,
+          role: 4,
+        });
+        const teacherCount = await User.countDocuments({
+          semesterId: semester._id,
+          role: 2,
+        });
+        const mentorCount = await User.countDocuments({
+          semesterId: semester._id,
+          role: 3,
+        });
+        const classCount = await Class.countDocuments({
+          semesterId: semester._id,
+        });
+
+        return {
+          ...semester.toObject(),
+          studentCount,
+          teacherCount,
+          mentorCount,
+          classCount,
+        };
+      })
+    );
+
+    return semestersWithCounts;
+  } catch (error) {
+    throw new Error(
+      "Error in fetching semester data with counts: " + error.message
+    );
+  }
 };
 
 const getOverlappingSemester = async (startDate, endDate) => {
@@ -114,6 +150,45 @@ const getUsersBySemesterId = async (semesterId) => {
   }
 };
 
+const findSemesterFinished = async (semesterIds) => {
+  try {
+    const finishedSemesters = await Semester.find({
+      _id: { $in: semesterIds },
+      status: "Finished",
+    }).exec();
+    return finishedSemesters;
+  } catch (error) {
+    console.error(`Error in findSemesterFinished: ${error.message}`);
+    throw new Error(error.message); // Thay vì throw, nên chuyển lỗi tới middleware
+  }
+};
+const getCurrentSemester = async () => {
+  const currentDate = new Date();
+  const semester = await Semester.findOne({
+    startDate: { $lte: currentDate },
+    endDate: { $gte: currentDate },
+  });
+
+  if (!semester) {
+    return null;
+  }
+
+  return semester;
+};
+const getCountsForSemester = async (semesterId) => {
+  const studentCount = await User.countDocuments({ semesterId, role: 4 });
+  const teacherCount = await User.countDocuments({ semesterId, role: 2 });
+  const mentorCount = await User.countDocuments({ semesterId, role: 3 });
+  const classCount = await Class.countDocuments({ semesterId });
+
+  return {
+    studentCount,
+    teacherCount,
+    mentorCount,
+    classCount,
+  };
+};
+
 export default {
   createSemester,
   getAllSemesters,
@@ -123,4 +198,7 @@ export default {
   getSemesterByName,
   updateSemester,
   getUsersBySemesterId,
+  findSemesterFinished,
+  getCurrentSemester,
+  getCountsForSemester,
 };
