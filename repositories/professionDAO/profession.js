@@ -39,6 +39,18 @@ const updateProfession = async (id, values) => {
   }
 };
 
+const patchProfession = async (id, values) => {
+  try {
+    return await Profession.findByIdAndUpdate(
+      id,
+      { $set: values },
+      { new: true }
+    ).exec();
+  } catch (error) {
+    throw new Error(error.message);
+  }
+};
+
 const deleteProfession = async (id) => {
   try {
     return await Profession.findByIdAndDelete(id);
@@ -52,5 +64,6 @@ export default {
   getAllProfessionsById,
   createNewProfession,
   updateProfession,
+  patchProfession,
   deleteProfession,
 };

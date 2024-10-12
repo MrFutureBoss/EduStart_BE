@@ -57,6 +57,7 @@ export function sendEmail({ recipient_email, OTP }) {
   });
 }
 
+
 export async function sendEmailToUser(email, password) {
   if (process.env.EMAIL_ENABLED === "false") {
     return;
@@ -108,3 +109,4 @@ export async function sendEmailToUser(email, password) {
     throw new Error("Unable to send email.");
   }
 }
+
