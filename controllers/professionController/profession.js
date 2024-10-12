@@ -1,26 +1,19 @@
 import professionDAO from "../../repositories/professionDAO/index.js";
+import mongoose from "mongoose";
 
 const getAllProfessions = async (req, res, next) => {
   try {
     const { status, search, limit = 10, page = 1 } = req.query;
-
-    // Convert `limit` and `page` to integers (default limit to 10, default page to 1)
     const limitInt = parseInt(limit, 10);
     const pageInt = parseInt(page, 10);
-
-    // Calculate the number of documents to skip for pagination
     const skip = (pageInt - 1) * limitInt;
-
-    // Call the DAO with the calculated `skip`, `limit`, and other filters
     const professions = await professionDAO.getAllProfessions(
       status,
       skip,
       limitInt,
       search
     );
-
-    // Respond with paginated results
-    res.status(200).json(professions); // Return the data and total count
+    res.status(200).json(professions);
   } catch (error) {
     next(error);
   }
@@ -41,6 +34,39 @@ const getProfessionById = async (req, res, next) => {
   }
 };
 
+const getAllSpecialtyByProfessionID = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID không hợp lệ" });
+    }
+
+    const result = await professionDAO.getAllSpecialtyByProfessionID(id);
+    res.status(200).json(result);
+  } catch (error) {
+    return res.status(404).json({ message: error.message });
+  }
+};
+
+const findProfessionAndSpecialtyByName = async (req, res, next) => {
+  try {
+    const { name } = req.query; // Lấy 'name' từ query params
+
+    if (!name || name.length < 2) {
+      return res.status(400).json({ message: "Tên cần có ít nhất 2 ký tự" });
+    }
+
+    const result = await professionDAO.findProfessionAndSpecialtyByName(name);
+
+    res.status(200).json(result); // Trả về kết quả
+  } catch (error) {
+    // Trả về message không tìm thấy hoặc lỗi khác từ DAO
+    return res.status(404).json({ message: error.message });
+  }
+};
+
+
 const createNewProfession = async (req, res, next) => {
   try {
     const { name, specialties, status } = req.body;
@@ -51,7 +77,8 @@ const createNewProfession = async (req, res, next) => {
     );
     res.status(201).send(newProfession);
   } catch (error) {
-    next(error);
+    // Trả về thông báo lỗi từ error.message
+    return res.status(400).json({ message: error.message });
   }
 };
 
@@ -76,10 +103,11 @@ const deleteProfessionAndSpecialties = async (req, res, next) => {
   }
 };
 
-
 export default {
   getAllProfessions,
   getProfessionById,
+  getAllSpecialtyByProfessionID,
+  findProfessionAndSpecialtyByName,
   createNewProfession,
   updateProfession,
   deleteProfessionAndSpecialties,
