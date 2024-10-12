@@ -27,9 +27,7 @@ const userSchema = new Schema(
       ref: Classes,
     },
     Dob: { type: Date },
-    gender: { type: Boolean },
     phoneNumber: { type: String },
-    image: { type: String },
     degree: { type: String },
     groupId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -39,8 +37,6 @@ const userSchema = new Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: Semester,
     },
-    menteeCount: { type: Number },
-    isLeader: { type: Boolean, default: false },
     status: {
       type: String,
       enum: ["Active", "InActive", "Disabled"],
@@ -48,7 +44,6 @@ const userSchema = new Schema(
     },
     rollNumber: { type: String },
     memberCode: { type: String },
-    slotType: { type: String },
   },
   {
     timestamps: true,

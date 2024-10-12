@@ -1,22 +1,226 @@
+import moment from "moment";
 import semesterDAO from "../../repositories/semesterDAO/index.js";
+import classDAO from "../../repositories/classDAO/index.js";
 
-const getUpcomingSemesters = async (req, res, next) => {
+const createSemester = async (req, res) => {
   try {
-    const upcomingSemesters = await semesterDAO.findUpcomingSemesters();
+    const { name, startDate, endDate } = req.body;
 
-    if (!upcomingSemesters || upcomingSemesters.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "Không có kỳ học 'Upcoming' nào." });
+    const nameFormat = /^(SP|SU|FA)\d{2}$/;
+    if (!nameFormat.test(name)) {
+      return res.status(400).json({
+        message:
+          "Tên kỳ học không đúng định dạng! Vui lòng sử dụng định dạng: SPxx, SUxx, FAxx.",
+      });
     }
 
-    res.status(200).json(upcomingSemesters);
+    const existingSemester = await semesterDAO.getSemesterByName(name);
+    if (existingSemester) {
+      return res.status(400).json({ message: "Tên kỳ học đã tồn tại!" });
+    }
+
+    const start = moment(startDate).startOf("day");
+    const end = moment(endDate).startOf("day");
+
+    if (!start.isValid() || !end.isValid()) {
+      return res
+        .status(400)
+        .json({ message: "Ngày bắt đầu hoặc ngày kết thúc không hợp lệ!" });
+    }
+
+    if (start.isSame(end)) {
+      return res.status(400).json({
+        message: "Ngày bắt đầu và ngày kết thúc không thể trùng nhau!",
+      });
+    }
+
+    if (start.isAfter(end)) {
+      return res
+        .status(400)
+        .json({ message: "Ngày bắt đầu không thể sau ngày kết thúc!" });
+    }
+
+    const durationInMonths = end.diff(start, "months", true);
+    if (durationInMonths < 2) {
+      return res
+        .status(400)
+        .json({ message: "Kỳ học phải kéo dài ít nhất 2 tháng!" });
+    }
+    if (durationInMonths > 4) {
+      return res
+        .status(400)
+        .json({ message: "Kỳ học không thể kéo dài hơn 4 tháng!" });
+    }
+
+    const overlappingSemesters = await semesterDAO.getOverlappingSemester(
+      start.toDate(),
+      end.toDate()
+    );
+    if (overlappingSemesters.length > 0) {
+      return res
+        .status(400)
+        .json({ message: "Kỳ học mới bị trùng với một kỳ học đã có!" });
+    }
+
+    const newSemester = await semesterDAO.createSemester({
+      name,
+      startDate: start.toDate(),
+      endDate: end.toDate(),
+      status: "Upcoming",
+    });
+
+    return res.status(201).json(newSemester);
   } catch (error) {
-    console.error("Lỗi khi lấy các kỳ học 'Upcoming':", error);
-    res.status(500).json({ message: "Lỗi máy chủ" });
+    return res.status(500).json({ message: "Lỗi khi tạo kỳ học mới.", error });
+  }
+};
+
+const updateSemester = async (req, res) => {
+  try {
+    const { semesterId } = req.params;
+    const { name, startDate, endDate } = req.body;
+
+    const nameFormat = /^(SP|SU|FA)\d{2}$/;
+    if (!nameFormat.test(name)) {
+      return res.status(400).json({
+        message:
+          "Tên kỳ học không đúng định dạng! Vui lòng sử dụng định dạng: SPxx, SUxx, FAxx.",
+      });
+    }
+
+    const existingSemester = await semesterDAO.getSemesterByName(name);
+    if (existingSemester && existingSemester._id.toString() !== semesterId) {
+      return res.status(400).json({ message: "Tên kỳ học đã tồn tại!" });
+    }
+
+    const start = moment(startDate).startOf("day");
+    const end = moment(endDate).startOf("day");
+
+    if (!start.isValid() || !end.isValid()) {
+      return res
+        .status(400)
+        .json({ message: "Ngày bắt đầu hoặc ngày kết thúc không hợp lệ!" });
+    }
+
+    if (start.isSame(end)) {
+      return res.status(400).json({
+        message: "Ngày bắt đầu và ngày kết thúc không thể trùng nhau!",
+      });
+    }
+
+    if (start.isAfter(end)) {
+      return res
+        .status(400)
+        .json({ message: "Ngày bắt đầu không thể sau ngày kết thúc!" });
+    }
+
+    const durationInMonths = end.diff(start, "months", true);
+    if (durationInMonths < 2) {
+      return res
+        .status(400)
+        .json({ message: "Kỳ học phải kéo dài ít nhất 3 tháng!" });
+    }
+    if (durationInMonths > 4) {
+      return res
+        .status(400)
+        .json({ message: "Kỳ học không thể kéo dài hơn 12 tháng!" });
+    }
+
+    const overlappingSemesters = await semesterDAO.getOverlappingSemester(
+      start.toDate(),
+      end.toDate()
+    );
+    const hasOverlap = overlappingSemesters.some(
+      (semester) => semester._id.toString() !== semesterId
+    );
+    if (hasOverlap) {
+      return res
+        .status(400)
+        .json({ message: "Kỳ học mới bị trùng với một kỳ học đã có!" });
+    }
+
+    const updatedSemester = await semesterDAO.updateSemester(semesterId, {
+      name,
+      startDate: start.toDate(),
+      endDate: end.toDate(),
+    });
+
+    if (!updatedSemester) {
+      return res.status(404).json({ message: "Kỳ học không tồn tại!" });
+    }
+
+    return res.status(200).json(updatedSemester);
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Lỗi khi chỉnh sửa kỳ học.", error });
+  }
+};
+
+const autoUpdateSemesterStatus = async () => {
+  try {
+    const currentDate = moment().startOf("day");
+    const semesters = await semesterDAO.getAllSemesters();
+
+    for (const semester of semesters) {
+      const semesterStartDate = moment(semester.startDate).startOf("day");
+      const semesterEndDate = moment(semester.endDate).startOf("day");
+
+      if (
+        semester.status === "Upcoming" &&
+        semesterStartDate.isSameOrBefore(currentDate)
+      ) {
+        await semesterDAO.updateSemesterStatus(semester._id, "Ongoing");
+
+        await semesterDAO.updateUserStatusBySemesterId(semester._id, "Active");
+      }
+
+      if (
+        semester.status === "Ongoing" &&
+        semesterEndDate.isSameOrBefore(currentDate)
+      ) {
+        await semesterDAO.updateSemesterStatus(semester._id, "Finished");
+
+        await semesterDAO.updateUserStatusBySemesterId(
+          semester._id,
+          "InActive"
+        );
+      }
+    }
+  } catch (error) {
+    console.error("Lỗi khi tự động cập nhật trạng thái kỳ học:", error);
+  }
+};
+const getAllSemesters = async (req, res) => {
+  try {
+    const semesters = await semesterDAO.getAllSemesters();
+    return res.status(200).json(semesters);
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ message: "Lỗi khi lấy danh sách kỳ học.", error });
+  }
+};
+
+const getUsersBySemester = async (req, res) => {
+  try {
+    const { semesterId } = req.params;
+
+    // Lấy danh sách người dùng với thông tin bổ sung
+    const users = await semesterDAO.getUsersBySemesterId(semesterId);
+
+    // Trả về danh sách người dùng
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("Error in getUsersBySemester:", error);
+    res.status(500).json({ message: error.message });
   }
 };
 
 export default {
-  getUpcomingSemesters,
+  createSemester,
+  updateSemester,
+  autoUpdateSemesterStatus,
+  getAllSemesters,
+  getUsersBySemester,
 };

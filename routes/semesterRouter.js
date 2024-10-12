@@ -3,7 +3,9 @@ import semesterController from "../controllers/semesterController/index.js";
 
 const semesterRouter = express.Router();
 
-// Route để lấy danh sách các kỳ học có trạng thái 'Upcoming'
-semesterRouter.get("/upcoming", semesterController.getUpcomingSemesters);
+semesterRouter.post("/create", semesterController.createSemester);
+semesterRouter.put("/update/:semesterId", semesterController.updateSemester);
+semesterRouter.get("/all", semesterController.getAllSemesters);
+semesterRouter.get("/:semesterId/users", semesterController.getUsersBySemester);
 
 export default semesterRouter;

@@ -7,7 +7,9 @@ import path from "path";
 import connectDB from "./database.js";
 import http from "http";
 import routes from "./routes/index.js";
-import "./tasks/semesterUpdate.js";
+import semesterController from "./controllers/semesterController/index.js";
+import cron from "node-cron";
+
 const app = express();
 dotnv.config();
 
@@ -43,6 +45,8 @@ app.use("/semester", routes.semesterRouter);
 app.use("/admins", routes.adminRouter);
 app.use("/profession", routes.professionRouters);
 app.use("/specialty", routes.specialtyRouters);
+app.use("/tempMatching", routes.tempMatchingRouter);
+app.use("/teacher", routes.teacherRouter);
 
 app.use(async (req, res, next) => {
   next(createError.NotFound());
@@ -55,7 +59,9 @@ app.use((err, req, res, next) => {
     message: err.message,
   });
 });
-
+cron.schedule("0 0 * * *", () => {
+  semesterController.autoUpdateSemesterStatus();
+});
 server.listen(port, () => {
   connectDB();
   console.log(`listening on ${port}`);
