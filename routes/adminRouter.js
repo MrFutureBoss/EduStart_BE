@@ -12,5 +12,13 @@ adminRouter.post(
   upload.single("file"),
   adminController.insertListUsers
 );
+adminRouter.post("/add-user-hand", adminController.insertUserByHand);
+
+adminRouter.get(
+  "/:semesterId/available/class",
+  adminController.getAvailableClasses
+);
+adminRouter.post("/assign/student", adminController.assignStudentToClass);
+adminRouter.get("/pending-user/:semesterId", adminController.getPendingUsers);
 
 export default adminRouter;

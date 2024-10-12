@@ -7,5 +7,6 @@ semesterRouter.post("/create", semesterController.createSemester);
 semesterRouter.put("/update/:semesterId", semesterController.updateSemester);
 semesterRouter.get("/all", semesterController.getAllSemesters);
 semesterRouter.get("/:semesterId/users", semesterController.getUsersBySemester);
+semesterRouter.get("/current", semesterController.getCurrentSemesterController);
 
 export default semesterRouter;

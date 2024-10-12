@@ -6,62 +6,57 @@ const createSemester = async (req, res) => {
   try {
     const { name, startDate, endDate } = req.body;
 
+    // Kiểm tra định dạng tên kỳ học
     const nameFormat = /^(SP|SU|FA)\d{2}$/;
     if (!nameFormat.test(name)) {
       return res.status(400).json({
-        message:
-          "Tên kỳ học không đúng định dạng! Vui lòng sử dụng định dạng: SPxx, SUxx, FAxx.",
+        message: "Có lỗi xảy ra.",
+        fields: {
+          name: "Tên kỳ học không đúng định dạng! Vui lòng sử dụng định dạng: SPxx, SUxx, FAxx.",
+        },
       });
     }
 
+    // Kiểm tra xem tên kỳ học đã tồn tại hay chưa
     const existingSemester = await semesterDAO.getSemesterByName(name);
     if (existingSemester) {
-      return res.status(400).json({ message: "Tên kỳ học đã tồn tại!" });
+      return res.status(400).json({
+        message: "Có lỗi xảy ra.",
+        fields: {
+          name: "Tên kỳ học đã tồn tại!",
+        },
+      });
     }
 
     const start = moment(startDate).startOf("day");
     const end = moment(endDate).startOf("day");
 
+    // Kiểm tra ngày bắt đầu và kết thúc có hợp lệ hay không
     if (!start.isValid() || !end.isValid()) {
-      return res
-        .status(400)
-        .json({ message: "Ngày bắt đầu hoặc ngày kết thúc không hợp lệ!" });
-    }
-
-    if (start.isSame(end)) {
       return res.status(400).json({
-        message: "Ngày bắt đầu và ngày kết thúc không thể trùng nhau!",
+        message: "Có lỗi xảy ra.",
+        fields: {
+          startDate: "Ngày bắt đầu không hợp lệ!",
+          endDate: "Ngày kết thúc không hợp lệ!",
+        },
       });
     }
 
-    if (start.isAfter(end)) {
-      return res
-        .status(400)
-        .json({ message: "Ngày bắt đầu không thể sau ngày kết thúc!" });
-    }
-
-    const durationInMonths = end.diff(start, "months", true);
-    if (durationInMonths < 2) {
-      return res
-        .status(400)
-        .json({ message: "Kỳ học phải kéo dài ít nhất 2 tháng!" });
-    }
-    if (durationInMonths > 4) {
-      return res
-        .status(400)
-        .json({ message: "Kỳ học không thể kéo dài hơn 4 tháng!" });
-    }
-
+    // Kiểm tra thời gian trùng
     const overlappingSemesters = await semesterDAO.getOverlappingSemester(
       start.toDate(),
       end.toDate()
     );
     if (overlappingSemesters.length > 0) {
-      return res
-        .status(400)
-        .json({ message: "Kỳ học mới bị trùng với một kỳ học đã có!" });
+      return res.status(400).json({
+        message: "Có lỗi xảy ra.",
+        fields: {
+          startDate: "Kỳ học mới bị trùng với một kỳ học đã có!",
+        },
+      });
     }
 
+    // Tạo kỳ học mới
     const newSemester = await semesterDAO.createSemester({
       name,
       startDate: start.toDate(),
@@ -74,7 +69,6 @@ const createSemester = async (req, res) => {
     return res.status(500).json({ message: "Lỗi khi tạo kỳ học mới.", error });
   }
 };
-
 const updateSemester = async (req, res) => {
   try {
     const { semesterId } = req.params;
@@ -90,7 +84,12 @@ const updateSemester = async (req, res) => {
 
     const existingSemester = await semesterDAO.getSemesterByName(name);
     if (existingSemester && existingSemester._id.toString() !== semesterId) {
-      return res.status(400).json({ message: "Tên kỳ học đã tồn tại!" });
+      return res.status(400).json({
+        message: "Có lỗi xảy ra.",
+        fields: {
+          name: "Tên kỳ học đã tồn tại!",
+        },
+      });
     }
 
     const start = moment(startDate).startOf("day");
@@ -134,9 +133,12 @@ const updateSemester = async (req, res) => {
       (semester) => semester._id.toString() !== semesterId
     );
     if (hasOverlap) {
-      return res
-        .status(400)
-        .json({ message: "Kỳ học mới bị trùng với một kỳ học đã có!" });
+      return res.status(400).json({
+        message: "Có lỗi xảy ra.",
+        fields: {
+          startDate: "Kỳ học mới bị trùng với một kỳ học đã có!",
+        },
+      });
     }
 
     const updatedSemester = await semesterDAO.updateSemester(semesterId, {
@@ -167,20 +169,30 @@ const autoUpdateSemesterStatus = async () => {
       const semesterEndDate = moment(semester.endDate).startOf("day");
 
       if (
-        semester.status === "Upcoming" &&
-        semesterStartDate.isSameOrBefore(currentDate)
+        currentDate.isBefore(semesterStartDate) &&
+        semester.status !== "Upcoming"
+      ) {
+        await semesterDAO.updateSemesterStatus(semester._id, "Upcoming");
+        await semesterDAO.updateUserStatusBySemesterId(
+          semester._id,
+          "InActive"
+        );
+      }
+
+      if (
+        currentDate.isSameOrAfter(semesterStartDate) &&
+        currentDate.isSameOrBefore(semesterEndDate) &&
+        semester.status !== "Ongoing"
       ) {
         await semesterDAO.updateSemesterStatus(semester._id, "Ongoing");
-
         await semesterDAO.updateUserStatusBySemesterId(semester._id, "Active");
       }
 
       if (
-        semester.status === "Ongoing" &&
-        semesterEndDate.isSameOrBefore(currentDate)
+        currentDate.isAfter(semesterEndDate) &&
+        semester.status !== "Finished"
       ) {
         await semesterDAO.updateSemesterStatus(semester._id, "Finished");
-
         await semesterDAO.updateUserStatusBySemesterId(
           semester._id,
           "InActive"
@@ -191,9 +203,11 @@ const autoUpdateSemesterStatus = async () => {
     console.error("Lỗi khi tự động cập nhật trạng thái kỳ học:", error);
   }
 };
+
 const getAllSemesters = async (req, res) => {
   try {
     const semesters = await semesterDAO.getAllSemesters();
+
     return res.status(200).json(semesters);
   } catch (error) {
     return res
@@ -217,10 +231,38 @@ const getUsersBySemester = async (req, res) => {
   }
 };
 
+const getCurrentSemesterController = async (req, res) => {
+  try {
+    // Fetch the current semester
+    const semester = await semesterDAO.getCurrentSemester();
+
+    if (!semester) {
+      return res.status(404).json({ message: "Không có kỳ học đang diễn ra." });
+    }
+
+    // Fetch counts for users and classes
+    const { studentCount, teacherCount, mentorCount, classCount } =
+      await semesterDAO.getCountsForSemester(semester._id);
+
+    // Respond with semester data and counts
+    res.status(200).json({
+      ...semester.toObject(),
+      studentCount,
+      teacherCount,
+      mentorCount,
+      classCount,
+    });
+  } catch (error) {
+    console.error("Error in getCurrentSemester:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
 export default {
   createSemester,
   updateSemester,
   autoUpdateSemesterStatus,
   getAllSemesters,
   getUsersBySemester,
+  getCurrentSemesterController,
 };

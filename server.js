@@ -9,6 +9,7 @@ import http from "http";
 import routes from "./routes/index.js";
 import semesterController from "./controllers/semesterController/index.js";
 import cron from "node-cron";
+import errorMiddleware from "./middlewares/errorMiddleware.js";
 
 const app = express();
 dotnv.config();
@@ -51,6 +52,7 @@ app.use("/teacher", routes.teacherRouter);
 app.use(async (req, res, next) => {
   next(createError.NotFound());
 });
+app.use(errorMiddleware);
 
 app.use((err, req, res, next) => {
   res.status(err.status || 500);
