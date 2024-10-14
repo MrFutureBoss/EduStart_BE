@@ -109,6 +109,16 @@ const updateProfession = async (req, res, next) => {
   }
 };
 
+const patchProfession = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updateFields = req.body;
+    res.send(await professionDAO.patchProfession(id, updateFields));
+  } catch (error) {
+    next(error);
+  }
+};
+
 const deleteProfessionAndSpecialties = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -129,4 +139,5 @@ export default {
   updateProfessionAndSpecialty,
   updateProfession,
   deleteProfessionAndSpecialties,
+  patchProfession,
 };

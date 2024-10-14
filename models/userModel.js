@@ -1,6 +1,7 @@
 import mongoose, { Schema } from "mongoose";
 import Classes from "./classModel.js";
 import Group from "./groupModel.js";
+import Semester from "./semesterModel.js";
 
 const userSchema = new Schema(
   {
@@ -26,24 +27,21 @@ const userSchema = new Schema(
       ref: Classes,
     },
     Dob: { type: Date },
-    gender: { type: Boolean },
     phoneNumber: { type: String },
-    image: { type: String },
     degree: { type: String },
     groupId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: Group,
     },
-    menteeCount: { type: Number },
-    isLeader: { type: Boolean, default: false },
+    semesterId: [{ type: mongoose.Schema.Types.ObjectId, ref: "Semester" }],
+
     status: {
       type: String,
-      enum: ["Active", "InActive", "Disabled"],
+      enum: ["Active", "InActive", "Disabled", "Pending"],
       default: "InActive",
     },
     rollNumber: { type: String },
     memberCode: { type: String },
-    slotType: { type: String },
   },
   {
     timestamps: true,

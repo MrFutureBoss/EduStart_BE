@@ -11,5 +11,5 @@ professionRouters.put("/:id/specialties", professionController.updateProfessionA
 professionRouters.post("/", professionController.createNewProfession);
 professionRouters.patch("/:id", professionController.updateProfession);
 professionRouters.delete("/:id", professionController.deleteProfessionAndSpecialties);
-
+professionRouters.patch("/:id", professionController.patchProfession);
 export default professionRouters;

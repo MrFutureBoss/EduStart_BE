@@ -123,6 +123,7 @@ const updateProfession = async (id, values) => {
   }
 };
 
+
 const updateProfessionAndSpecialty = async (professionId, professionData, specialtiesData) => {
   const session = await mongoose.startSession(); // Dùng session để thực hiện transaction
   session.startTransaction();
@@ -173,6 +174,19 @@ const updateProfessionAndSpecialty = async (professionId, professionData, specia
   }
 };
 
+const patchProfession = async (id, values) => {
+  try {
+    return await Profession.findByIdAndUpdate(
+      id,
+      { $set: values },
+      { new: true }
+    ).exec();
+  } catch (error) {
+    throw new Error(error.message);
+  }
+};
+
+
 const deleteProfessionAndSpecialties = async (professionId) => {
   try {
     const profession = await Profession.findById(professionId).populate(
@@ -203,4 +217,5 @@ export default {
   updateProfessionAndSpecialty,
   updateProfession,
   deleteProfessionAndSpecialties,
+  patchProfession,
 };
