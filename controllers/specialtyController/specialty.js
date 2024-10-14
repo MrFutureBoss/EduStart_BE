@@ -1,11 +1,10 @@
 import specialtyDAO from "../../repositories/specialtyDAO/index.js";
 
-const getAllSpecailties = async (req, res, next) => {
+const getAllSpecialties = async (req, res, next) => {
   try {
     const { status, skip, limit, search } = req.query;
     res.send(
-      await specialtyDAO.getAllSpecailties(
-        status,
+      await specialtyDAO.getAllSpecialties(
         Number.parseInt(skip || 0),
         Number.parseInt(limit || 0),
         search
@@ -16,14 +15,23 @@ const getAllSpecailties = async (req, res, next) => {
   }
 };
 
+
 const createNewSpecialty = async (req, res, next) => {
   try {
-    const { name } = req.body;
-    res.send(await specialtyDAO.createNewSpecialty(name));
+    const { specialties } = req.body;  // Expecting an array of specialties
+
+    // If "specialties" is an array, handle bulk creation
+    if (Array.isArray(specialties) && specialties.length > 0) {
+      res.send(await specialtyDAO.createMultipleSpecialties(specialties));
+    } else {
+      // If it's not an array, return an error or handle it for single specialty creation
+      res.status(400).send({ message: "Invalid input, please provide an array of specialties." });
+    }
   } catch (error) {
     next(error);
   }
 };
+
 
 const updateSpecialty = async (req, res, next) => {
   try {
@@ -43,7 +51,7 @@ const deleteSpecialty = async (req, res, next) => {
   }
 };
 export default {
-  getAllSpecailties,
+  getAllSpecialties,
   createNewSpecialty,
   updateSpecialty,
   deleteSpecialty,
