@@ -123,9 +123,58 @@ const updateProfession = async (id, values) => {
   }
 };
 
+const updateProfessionAndSpecialty = async (professionId, professionData, specialtiesData) => {
+  const session = await mongoose.startSession(); // Dùng session để thực hiện transaction
+  session.startTransaction();
+
+  try {
+    // Cập nhật profession
+    const updatedProfession = await Profession.findByIdAndUpdate(
+      professionId,
+      { ...professionData }, 
+      { new: true, session }
+    );
+
+    if (!updatedProfession) {
+      throw new Error('Profession not found');
+    }
+
+    // Xử lý specialties
+    const specialtyIds = [];
+    for (const specialtyData of specialtiesData) {
+      if (specialtyData._id) {
+        const updatedSpecialty = await Specialty.findByIdAndUpdate(
+          specialtyData._id,
+          { ...specialtyData },
+          { new: true, session }
+        );
+        specialtyIds.push(updatedSpecialty._id);
+      } else {
+        // Nếu không có _id, thêm chuyên môn mới
+        const newSpecialty = new Specialty({ ...specialtyData });
+        const savedSpecialty = await newSpecialty.save({ session });
+        specialtyIds.push(savedSpecialty._id);
+      }
+    }
+
+    // Gán lại danh sách specialties cho profession
+    updatedProfession.specialty = specialtyIds;
+    await updatedProfession.save({ session });
+
+    // Commit transaction sau khi tất cả các thao tác thành công
+    await session.commitTransaction();
+    session.endSession();
+
+    return updatedProfession;
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    throw new Error(error.message);
+  }
+};
+
 const deleteProfessionAndSpecialties = async (professionId) => {
   try {
-    // Find the profession by ID
     const profession = await Profession.findById(professionId).populate(
       "specialty"
     );
@@ -151,6 +200,7 @@ export default {
   getAllSpecialtyByProfessionID,
   findProfessionAndSpecialtyByName,
   createNewProfession,
+  updateProfessionAndSpecialty,
   updateProfession,
   deleteProfessionAndSpecialties,
 };

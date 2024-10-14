@@ -82,6 +82,23 @@ const createNewProfession = async (req, res, next) => {
   }
 };
 
+const updateProfessionAndSpecialty = async (req, res, next) => {
+  try {
+    const { id } = req.params; 
+    const { name, status, specialties } = req.body; 
+
+    const updatedProfession = await professionDAO.updateProfessionAndSpecialty(
+      id, // Profession ID
+      { name, status },
+      specialties
+    );
+
+    res.status(200).json(updatedProfession);
+  } catch (error) {
+    next(error);
+  }
+};
+
 const updateProfession = async (req, res, next) => {
   try {
     const { status, name } = req.body;
@@ -109,6 +126,7 @@ export default {
   getAllSpecialtyByProfessionID,
   findProfessionAndSpecialtyByName,
   createNewProfession,
+  updateProfessionAndSpecialty,
   updateProfession,
   deleteProfessionAndSpecialties,
 };
