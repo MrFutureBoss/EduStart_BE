@@ -1,7 +1,6 @@
 import User from "../../models/userModel.js";
 import Class from "../../models/classModel.js";
 
-// hàm để lấy số lượng học sinh trong lớp theo classId
 const getStudentCountByClassId = async (classId, semesterId) => {
   try {
     const count = await User.countDocuments({
@@ -15,7 +14,6 @@ const getStudentCountByClassId = async (classId, semesterId) => {
   }
 };
 
-// hàm để lấy thông tin của lớp theo classId
 const getClassById = async (classId) => {
   try {
     const classData = await Class.findById(classId);
@@ -56,3 +54,4 @@ export default {
   getClassById,
   getAvailableClasses,
 };
+

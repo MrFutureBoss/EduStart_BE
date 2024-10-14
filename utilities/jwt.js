@@ -4,7 +4,6 @@ import createError from "http-errors";
 function signAccessToken(userId, role) {
   return new Promise((resolve, reject) => {
     const payload = { role };
-
     const secret = process.env.SECRETKEY;
     const options = {
       expiresIn: "12h",
@@ -29,9 +28,13 @@ function verifyAccessToken(req, res, next) {
   const token = authHeader.split(" ")[1];
 
   jwt.verify(token, process.env.SECRETKEY, (err, payload) => {
-    if (err) return next(createError.Unauthorized());
-    req.payload = payload;
+    if (err) {
+      return next(createError.Unauthorized());
+    }
+    req.user = { _id: payload._id, role: payload.role }; 
     next();
+    console.log("role", req.user);
+    
   });
 }
 function verifyRole(allowedRoles) {
@@ -48,4 +51,30 @@ function verifyRole(allowedRoles) {
   };
 }
 
-export { signAccessToken, verifyAccessToken, verifyRole };
+function authorize(allowedRoles) {
+  if (!Array.isArray(allowedRoles)) {
+    throw new Error("allowedRoles must be an array");
+  }
+
+  return (req, res, next) => {
+    const { role } = req.user; 
+
+    console.log(`Role from token (req.user.role): ${role}`);
+    console.log(`Allowed roles: ${allowedRoles}`);
+
+    if (!role) {
+      return next(createError.Forbidden("Role not found in token"));
+    }
+
+    const roleAsString = String(role);  
+
+    const allowedRolesAsString = allowedRoles.map(String);  
+
+    if (!allowedRolesAsString.includes(roleAsString)) {
+      return next(createError.Forbidden("Permission denied"));
+    }
+
+    next();  
+  };
+}
+export { signAccessToken, verifyAccessToken, authorize, verifyRole };

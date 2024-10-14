@@ -6,7 +6,11 @@ const getUserLogin = async (req, res, next) => {
   try {
     const { email, password } = req.body;
     const token = await userDAO.loginUser({ email, password });
-    res.status(200).json(token);
+    const user = await userDAO.findUserByEmail(email);
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+    res.status(200).json({ token, user });
   } catch (error) {
     if (error.message === "Wrong password.") {
       return res.status(401).json({ error: error.message });

@@ -47,6 +47,7 @@ app.use("/specialty", routes.specialtyRouters);
 app.use("/tempMatching", routes.tempMatchingRouter);
 app.use("/teacher", routes.teacherRouter);
 app.use("/user", routes.userRouters);
+app.use("/activity", routes.activityRouters);
 
 app.use(async (req, res, next) => {
   next(createError.NotFound());
