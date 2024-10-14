@@ -19,11 +19,19 @@ const validateEmailDomain = (email) => {
 const normalizeUserData = (row, role, sourceType = "manual") => {
   const normalized = {
     email: row.Email ? row.Email.trim().toLowerCase() : "",
-    phoneNumber: row["Số điện thoại"]
-      ? String(row["Số điện thoại"]).replace(/\D/g, "").trim()
-      : "",
     role: role,
   };
+
+  // Xử lý phoneNumber dựa trên sourceType
+  if (sourceType === "excel") {
+    normalized.phoneNumber = row["Số điện thoại"]
+      ? String(row["Số điện thoại"]).replace(/\D/g, "").trim()
+      : "";
+  } else if (sourceType === "manual") {
+    normalized.phoneNumber = row.phoneNumber
+      ? String(row.phoneNumber).replace(/\D/g, "").trim()
+      : "";
+  }
 
   // Xử lý cho học sinh (role 4)
   if (role == 4) {
@@ -85,9 +93,19 @@ const normalizeUserData = (row, role, sourceType = "manual") => {
 
       if (
         !normalized.phoneNumber ||
-        !/^[0-9]{9,10}$/.test(normalized.phoneNumber)
+        !/^[0-9]{10}$/.test(normalized.phoneNumber)
       ) {
-        throw new Error("Số điện thoại của giáo viên không hợp lệ.");
+        throw new Error("Số điện thoại của giáo viên phải gồm 10 chữ số.");
+      }
+    } else if (sourceType === "manual") {
+      // Dữ liệu nhập tay cho giáo viên
+      normalized.username = row.username ? row.username.trim() : "Unknown";
+
+      if (
+        !normalized.phoneNumber ||
+        !/^[0-9]{10}$/.test(normalized.phoneNumber)
+      ) {
+        throw new Error("Số điện thoại của giáo viên phải gồm 10 chữ số.");
       }
     }
   }
@@ -111,9 +129,19 @@ const normalizeUserData = (row, role, sourceType = "manual") => {
 
       if (
         !normalized.phoneNumber ||
-        !/^[0-9]{9,10}$/.test(normalized.phoneNumber)
+        !/^[0-9]{10}$/.test(normalized.phoneNumber)
       ) {
-        throw new Error("Số điện thoại của mentor không hợp lệ.");
+        throw new Error("Số điện thoại của mentor phải gồm 10 chữ số.");
+      }
+    } else if (sourceType === "manual") {
+      // Dữ liệu nhập tay cho mentor
+      normalized.username = row.username ? row.username.trim() : "Unknown";
+
+      if (
+        !normalized.phoneNumber ||
+        !/^[0-9]{10}$/.test(normalized.phoneNumber)
+      ) {
+        throw new Error("Số điện thoại của mentor phải gồm 10 chữ số.");
       }
     }
   }
@@ -170,7 +198,7 @@ const insertListUsers = async (req, res, next) => {
     const usersToEmail = [];
     const fullClassUsers = [];
     const failedEmails = [];
-
+    const existingUserName = [];
     // Nhóm dữ liệu theo className (only role 4)
     const classUsersMap = {}; // { className: [user1, user2, ...] }
 
@@ -281,7 +309,35 @@ const insertListUsers = async (req, res, next) => {
           classUsersMap[user.className] = [];
         }
         classUsersMap[user.className].push(user);
-      } else if (role == 2 || role == 3) {
+      } else if (role == 3) {
+        // Xử lý các role khác
+        const password = generateRandomPassword();
+        const hashedPassword = await bcrypt.hash(password, 12);
+
+        const userData = {
+          ...user,
+          password: hashedPassword,
+          semesterId: [semesterId],
+          status: "Active",
+        };
+
+        usersToInsert.push(userData);
+        usersToEmail.push({ email: user.email, password, status: "Active" });
+        totalUsersAdded += 1;
+      } else if (role == 2) {
+        const checkTeacherExis = await adminsDAO.findTeacherByUsername(
+          user.username,
+          semesterId
+        );
+        if (checkTeacherExis) {
+          existingUserName.push(user.username),
+            errorMessages.push({
+              field: "username",
+              email: user.email,
+              message: `Tên giáo viên: ${user.username} đã tồn tại trong hệ thống.`,
+            });
+          continue;
+        }
         // Xử lý các role khác
         const password = generateRandomPassword();
         const hashedPassword = await bcrypt.hash(password, 12);
@@ -464,6 +520,7 @@ const insertUserByHand = async (req, res, next) => {
   try {
     const { semesterId, role, userInput } = req.body;
     const errors = [];
+    console.log(userInput);
 
     // Validate semesterId
     if (!semesterId) {
@@ -499,6 +556,12 @@ const insertUserByHand = async (req, res, next) => {
 
     try {
       user = normalizeUserData(userInput, role, "manual");
+      if (!user.username || user.username.trim() === "") {
+        throw {
+          field: "username",
+          message: "Tên người dùng không được để trống.",
+        };
+      }
     } catch (error) {
       // Assume normalizeUserData throws errors with field and message
       errors.push({
@@ -570,6 +633,18 @@ const insertUserByHand = async (req, res, next) => {
       }
     }
 
+    if (role === 2) {
+      const checkTeacherExis = await adminsDAO.findTeacherByUsername(
+        user.username,
+        semesterId
+      );
+      if (checkTeacherExis) {
+        errors.push({
+          field: "username",
+          message: `Tên giáo viên: ${user.username} đã tồn tại trong hệ thống.`,
+        });
+      }
+    }
     // If any validation errors occurred, return them
     if (errors.length > 0) {
       return res.status(400).json({ errors });
@@ -577,17 +652,19 @@ const insertUserByHand = async (req, res, next) => {
 
     // Generate password
     const password = generateRandomPassword();
-    user.password = password;
+    const hashedPassword = await bcrypt.hash(password, 12);
 
     // Create user
+    const userStatus = role === 4 ? "Pending" : "Active";
     const newUser = await adminsDAO.createUser({
       ...user,
+      password: hashedPassword,
       semesterId: [semesterId],
-      status: "Active",
+      status: userStatus,
     });
 
     // Send email to user
-    await sendEmailToUser(newUser.email, password, "Active");
+    await sendEmailToUser(newUser.email, password, userStatus);
 
     // Respond with success
     return res.status(201).json({
