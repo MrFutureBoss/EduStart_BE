@@ -9,11 +9,6 @@ const findTeacherByUsername = async (username, semesterId) => {
       role: 2,
       semesterId: semesterId,
     }).exec();
-    if (!teacher) {
-      throw new Error(
-        `Không tìm thấy giáo viên với username: ${username} trong kỳ học hiện tại.`
-      );
-    }
     return teacher;
   } catch (error) {
     console.error(`Error finding teacher by username: ${error.message}`);
