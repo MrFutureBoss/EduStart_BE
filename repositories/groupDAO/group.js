@@ -140,6 +140,7 @@ const createEmptyProject = async (index) => {
 const getMatchedByGroupId = async (groupId) => {
   return await Matched.findOne({ groupId }).populate("mentorId").exec();
 };
+
 const getAllGroupsByTeacherId = async (teacherId) => {
   try {
     const groups = await Group.find()

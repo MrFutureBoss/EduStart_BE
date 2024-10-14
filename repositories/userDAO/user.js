@@ -6,11 +6,13 @@ const loginUser = async ({ email, password }) => {
   try {
     const user = await User.findOne({ email: email });
     if (user) {
-      const isPasswordTeacher = await bcrypt.compare(password, user.password);
-      if (isPasswordTeacher) {
-        const token = jwt.sign({ _id: user._id }, process.env.SECRETKEY, {
+      const isPasswordValid = await bcrypt.compare(password, user.password);
+      if (isPasswordValid) {
+        const role = user.role;
+        const token = jwt.sign({ _id: user._id, role }, process.env.SECRETKEY, {
           expiresIn: "12h",
         });
+
         return token;
       } else {
         throw new Error("Wrong password.");

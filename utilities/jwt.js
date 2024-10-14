@@ -1,12 +1,9 @@
 import jwt from "jsonwebtoken";
 import createError from "http-errors";
 
-function signAccessToken(userId) {
+function signAccessToken(userId, role) {
   return new Promise((resolve, reject) => {
-    const payload = {
-      _id: user._id,  
-      role: user.role,  
-    };
+    const payload = { role };
     const secret = process.env.SECRETKEY;
     const options = {
       expiresIn: "12h",
@@ -40,7 +37,19 @@ function verifyAccessToken(req, res, next) {
     
   });
 }
+function verifyRole(allowedRoles) {
+  return (req, res, next) => {
+    const { role } = req.payload;
 
+    if (!allowedRoles.includes(role)) {
+      return next(
+        createError.Forbidden("Bạn không có quyền truy cập vào tài nguyên này")
+      );
+    }
+
+    next();
+  };
+}
 
 function authorize(allowedRoles) {
   if (!Array.isArray(allowedRoles)) {
@@ -68,11 +77,4 @@ function authorize(allowedRoles) {
     next();  
   };
 }
-
-
-
-
-
-
-
-export { signAccessToken, verifyAccessToken, authorize };
+export { signAccessToken, verifyAccessToken, authorize, verifyRole };

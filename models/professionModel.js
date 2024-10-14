@@ -8,6 +8,11 @@ const professionSchema = new Schema(
       unique: true,
       require: true,
     },
+    status: {
+      type: Boolean,
+      default: false,
+      require: true,
+    },
 
     specialty: [
       {
